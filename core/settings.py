@@ -35,7 +35,7 @@ INSTALLED_APPS = [
     #install
     'rest_framework',
     'drf_yasg',
-    'corsheaders',
+    
 
     'app_attendance',
     'app_courses',
@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     'app_users',
 
 ]
+AUTH_USER_MODEL = 'app_users.CustomUser'
+
 REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
