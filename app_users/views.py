@@ -19,13 +19,13 @@ class CreateUserView(generics.CreateAPIView):
 
 class CustomTokenObtainSerializer(TokenObtainPairSerializer):
     def validate(self,attrs):
-        id_number = attrs.get("id_number")
+        username = attrs.get("username")
         password = attrs.get("password")
 
-        user = CustomUser.objects.filter(id_number=id_number).first() 
+        user = CustomUser.objects.filter(id_number=username).first() 
 
         if user and user.check_password(password):
-            attrs["id_number"] = user.id_number
+            attrs["username"] = user.username
         return super().validate(attrs)
 
 class CustomTokenObtainView(TokenObtainPairView):

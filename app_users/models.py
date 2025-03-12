@@ -23,8 +23,7 @@ class CustomUser(AbstractUser):
     gender = models.CharField(max_length=10,choices=[("male","Male"),("female","Female")],
                               null=True,blank=True)
     
-    USERNAME_FIELD = "id_number"
-    REQUIRED_FIELDS = ['username','email']
+  
     def __str__(self):
         return self.username
 
