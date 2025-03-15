@@ -9,6 +9,7 @@ from drf_yasg import openapi
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include("app_users.urls", namespace="users")),
+    path('api/groups/',include("app_groups.urls",namespace="groups")),
     
     ]
 

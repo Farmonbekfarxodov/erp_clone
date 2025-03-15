@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'app_homework',
     'app_notifications',
     'app_users',
+    'app_groups',
 
 ]
 AUTH_USER_MODEL = 'app_users.CustomUser'
