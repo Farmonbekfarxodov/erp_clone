@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/users/', include("app_users.urls", namespace="users")),
     path('api/groups/',include("app_groups.urls",namespace="groups")),
+    path('api/lessons/',include("app_lessons.urls",namespace="lessons")),
     
     ]
 

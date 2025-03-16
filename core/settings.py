@@ -39,11 +39,11 @@ INSTALLED_APPS = [
     
 
     'app_attendance',
-    'app_courses',
     'app_homework',
     'app_notifications',
     'app_users',
     'app_groups',
+    'app_lessons',
 
 ]
 AUTH_USER_MODEL = 'app_users.CustomUser'
