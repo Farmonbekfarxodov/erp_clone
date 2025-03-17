@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'app_users',
     'app_groups',
     'app_lessons',
+    'app_courses',
 
 ]
 AUTH_USER_MODEL = 'app_users.CustomUser'

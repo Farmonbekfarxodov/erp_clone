@@ -1,16 +1,19 @@
 from django.contrib import admin
-from app_lessons.models import Lesson, Homework
+from .models import Lesson, Homework, HomeworkGrade
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ("id", "group", "teacher", "topic", "created_at")
+    list_display = ("topic", "group", "teacher", "created_at")
     list_filter = ("group", "teacher")
-    search_fields = ("topic", "content")
-    ordering = ("-created_at",)
+    search_fields = ("topic", "teacher__username")
 
 @admin.register(Homework)
 class HomeworkAdmin(admin.ModelAdmin):
-    list_display = ("id", "lesson", "student", "grade")
-    list_filter = ("lesson", "student", "grade")
+    list_display = ("lesson", "student", "submitted_at")  
     search_fields = ("lesson__topic", "student__username")
-    ordering = ("lesson", "student")
+
+@admin.register(HomeworkGrade)
+class HomeworkGradeAdmin(admin.ModelAdmin):
+    list_display = ("homework", "teacher", "score", "created_at")
+    list_filter = ("score", "teacher")
+    search_fields = ("homework__lesson__topic", "teacher__username")

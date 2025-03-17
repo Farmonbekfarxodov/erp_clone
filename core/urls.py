@@ -11,7 +11,7 @@ urlpatterns = [
     path('api/users/', include("app_users.urls", namespace="users")),
     path('api/groups/',include("app_groups.urls",namespace="groups")),
     path('api/lessons/',include("app_lessons.urls",namespace="lessons")),
-    
+    path('api/courses/',include("app_courses.urls",namespace="courses")),
     ]
 
 schema_view = get_schema_view(
