@@ -15,6 +15,8 @@ class CustomUser(AbstractUser):
         choices=UserRoles.choices,
         default=UserRoles.STUDENT
     )
+    created_by = models.ForeignKey("self",null=True,blank=True,on_delete=models.SET_NULL,
+                                   related_name="created_users")
     profile_picture = models.ImageField(upload_to="profiles/",
                                         null=True,blank=True)
     id_number = models.CharField(max_length=20,unique=True,

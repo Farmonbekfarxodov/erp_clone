@@ -1,115 +1,103 @@
+
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
-from drf_yasg.utils import swagger_auto_schema
-
-from .models import Lesson, Homework
-from .serializers import LessonSerializer, HomeworkSerializer
+from .models import Lesson, Homework, HomeworkGrade,HomeworkSubmission
+from .serializers import (LessonSerializer, HomeworkSerializer, 
+                          HomeworkGradeSerializer,HomeworkCreateSerializer,
+                          HomeworkSubmissionSerializer)
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
-    """Guruhga bog'langan darslarni ko'rish va yaratish"""
+    """Darslarni yaratish va ko'rish"""
+    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        """Foydalanuvchi faqat o'ziga tegishli guruhlarning darslarini ko'rishi kerak"""
-        user = self.request.user
-        if user.role == "teacher":
-            return Lesson.objects.filter(group__in=user.groups.all())
-        elif user.role == "student":
-            return Lesson.objects.filter(group__students=user)
-        return Lesson.objects.none()
-
     def perform_create(self, serializer):
-        """O'qituvchi faqat o'ziga tegishli guruhlar uchun dars yaratadi"""
-        user = self.request.user
-        if user.role != "teacher":
+        if self.request.user.role != "teacher":
             raise PermissionDenied("Faqat o'qituvchilar dars yaratishi mumkin")
-        
-        group = serializer.validated_data["group"]
-        if group not in user.groups.all():
-            raise PermissionDenied("Siz faqat o'z guruhlaringiz uchun dars yaratishingiz mumkin")
-        
-        serializer.save(teacher=user)
+        serializer.save(teacher=self.request.user)
 
 class LessonDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    """Bitta darsni olish, yangilash yoki o'chirish"""
+    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(auto_schema=None)  # Swagger uchun schema generatsiyasini o‘chirib qo‘yamiz
-    def get_queryset(self):
-        """Faqat autentifikatsiyadan o'tgan foydalanuvchilar o‘z guruhlarining darslarini ko‘ra oladi"""
-        user = self.request.user
+    def perform_update(self, serializer):
+        lesson = self.get_object()
+        if self.request.user.role != "teacher" or self.request.user != lesson.teacher:
+            raise PermissionDenied("Faqat o'z darslaringizni tahrirlashingiz mumkin")
+        serializer.save()
+    
+    def perform_destroy(self, instance):
+        if self.request.user.role != "teacher" or self.request.user != instance.teacher:
+            raise PermissionDenied("Faqat o'z darslaringizni o'chira olasiz")
+        instance.delete()
 
-        if not user.is_authenticated:
-            return Lesson.objects.none()
-
-        if user.role == "teacher":
-            return Lesson.objects.filter(teacher=user)
-        elif user.role == "student":
-            return Lesson.objects.filter(group__students=user)
-
-        return Lesson.objects.none()
-
-class HomeworkListCreateAPIView(generics.ListCreateAPIView):
-    """Uy vazifasi yaratish va ro'yxatini ko'rish"""
-    serializer_class = HomeworkSerializer
+class HomeworkCreateAPIView(generics.CreateAPIView):
+    queryset = Homework.objects.all()
+    serializer_class = HomeworkCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        """Foydalanuvchi faqat o‘z guruhidagi darslar uchun uy vazifalarini ko‘rishi kerak"""
+    def perform_create(self, serializer):
         user = self.request.user
-        if user.role == "student":
-            return Homework.objects.filter(student=user)
-        elif user.role == "teacher":
-            return Homework.objects.filter(lesson__group__in=user.groups.all())
-        return Homework.objects.none()
+
+        if user.role != "teacher":
+            raise PermissionDenied("Faqat o'qituvchilar uy vazifasini yaratishi mumkin")
+        
+        serializer.save(student=user)
+
+class HomeworkListCreateAPIView(generics.ListCreateAPIView):
+    """O'quvchi uyga vazifa yuklashi"""
+    queryset = HomeworkSubmission.objects.all()
+    serializer_class = HomeworkSubmissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        """Faqat o'quvchilar o'z guruhlaridagi darslar uchun vazifa topshira oladi"""
         user = self.request.user
+        homework = serializer.validated_data["homework"] 
+        lesson = homework.lesson 
+     
         if user.role != "student":
-            raise PermissionDenied("Faqat talabalar vazifa yuklashlari mumkin")
+            raise PermissionDenied("Faqat talabalar vazifa yuklashi mumkin")
+
         
-        lesson = serializer.validated_data["lesson"]
-        if lesson.group not in user.groups.all():
-            raise PermissionDenied("Siz faqat o'z guruhingiz uchun vazifa yuklashingiz mumkin")
+        if lesson.group not in user.groups.all():  
+            raise PermissionDenied("Siz bu dars uchun vazifa yuklay olmaysiz")
 
         serializer.save(student=user)
 
-class HomeworkDetailAPIView(generics.RetrieveUpdateAPIView):
-    """Uy vazifalarini ko'rish va baholash"""
+
+class HomeworkDetailAPIView(generics.RetrieveDestroyAPIView):
+    queryset = Homework.objects.all()
     serializer_class = HomeworkSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    @swagger_auto_schema(auto_schema=None)  # Swagger uchun schema generatsiyasini o‘chirib qo‘yamiz
-    def get_queryset(self):
-        """Faqat autentifikatsiyadan o'tgan foydalanuvchilar o‘z guruhlarining uy vazifalarini ko‘ra oladi"""
-        user = self.request.user
-
-        if not user.is_authenticated:
-            return Homework.objects.none()  
-
-        if user.role == "teacher":
-            return Homework.objects.filter(lesson__group__in=user.groups.all())
-        elif user.role == "student":
-            return Homework.objects.filter(student=user)
-
-        return Homework.objects.none()
-    
-    def perform_update(self, serializer):
-        """Faqat o'qituvchi o'z guruhidagi talabalar uchun baho qo'ya oladi"""
-        user = self.request.user
-
-        if not user.is_authenticated:
-            raise PermissionDenied("Foydalanuvchi autentifikatsiyadan o'tmagan")
-
-        if user.role != "teacher":
-            raise PermissionDenied("Faqat o'qituvchilar uy vazifasini baholay oladi")
-
+    def perform_update(self,serializer):
         homework = self.get_object()
-        if homework.lesson.group not in user.groups.all():
-            raise PermissionDenied("Siz faqat o‘z guruhingizdagi talabalar uchun baho qo'ya olasiz")
-
+        if self.request.user.role != "student" or self.request.user != homework.student:
+            raise PermissionDenied("Faqat o'z uyga vazifangizni tahrirlashingiz mumkin")
+        if not homework.is_editable():
+            raise PermissionDenied("Vazifa topshirish muddati tugagan!!!")
         serializer.save()
 
+    def perform_destroy(self, instance):
+        if self.request.user.role != "student" or self.request.user != instance.student:
+            raise PermissionDenied("Faqat o'z uyga vazifangizni o'chira olasiz")
+        if not instance.is_editable():
+            raise PermissionDenied("Vazifa topshirish muddati tugagan o'chirish mumkin emas")
+        instance.delete()
+
+class HomeworkGradeCreateAPIView(generics.CreateAPIView):
+    
+    queryset = HomeworkGrade.objects.all()
+    serializer_class = HomeworkGradeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        
+        homework = serializer.validated_data.get("homework")
+        if self.request.user.role != "teacher" or self.request.user != homework.lesson.teacher:
+            raise PermissionDenied("Faqat o‘z darslaringizdagi vazifalarni baholashingiz mumkin")
+        if homework.is_editable():
+            raise PermissionDenied("Vazifa topshirish muddati hali tugamagan!!!")
+        serializer.save(teacher=self.request.user)

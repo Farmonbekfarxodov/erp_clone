@@ -38,9 +38,6 @@ INSTALLED_APPS = [
     'drf_yasg',
     
 
-    'app_attendance',
-    'app_homework',
-    'app_notifications',
     'app_users',
     'app_groups',
     'app_lessons',

@@ -4,16 +4,23 @@ from .models import Course
 from .serializers import CourseSerializer
 
 
-class CourseListCreateAPIView(generics.ListAPIView):
+class CourseListCreateAPIView(generics.ListCreateAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self,serializer):
-        if self.request.user.role != "admin":
+       
+        user = self.request.user
+        if user.role != "admin":
             raise PermissionDenied("Faqat adminlar kurs yarata oladi")
-        serializer.save(admin=self.request.user)
+        
+        teacher_id = self.request.data.get("teacher")
+        if not teacher_id:
+            raise PermissionDenied("Kursga o‘qituvchi biriktirish majburiy")
 
+        serializer.save(admin=user)
+    
 class CourseDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer

@@ -3,13 +3,13 @@ from .models import Lesson, Homework, HomeworkGrade
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ("topic", "group", "teacher", "created_at")
+    list_display = ("id","topic", "group", "teacher", "created_at")
     list_filter = ("group", "teacher")
     search_fields = ("topic", "teacher__username")
 
 @admin.register(Homework)
 class HomeworkAdmin(admin.ModelAdmin):
-    list_display = ("lesson", "student", "submitted_at")  
+    list_display = ("id","lesson", "student", "submitted_at")  
     search_fields = ("lesson__topic", "student__username")
 
 @admin.register(HomeworkGrade)

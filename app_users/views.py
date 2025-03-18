@@ -15,22 +15,42 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
-       if self.request.method in ["POST","GET"]:
-           return [permissions.IsAdminUser()]
-       return [permissions.IsAuthenticated()]
+        user = self.request.user
+
+        if not user.is_authenticated:
+           return [permissions.AllowAny()]
+
+        if self.request.method == "GET":
+            if user.role in ["superadmin","admin"]:
+                return [permissions.IsAuthenticated()]
+            raise PermissionDenied("Sizda foydalanuvchilarni ko'rish huquqi yo'q")
+        
+        if self.request.method == "POST":
+            if user.role in ["superadmin","admin"]:
+                return [permissions.IsAuthenticated()]
+            raise PermissionDenied("Sizda yangi foydalanuvchi yaratish huquqi mavjud emas") 
+        
+        return [permissions.IsAuthenticated()]
+
     
     def perform_create(self, serializer):
+        """Foydalanuvchini yaratishda ro‘llarni tekshirish"""
         user = self.request.user
+
         if user.role == "superadmin":
-            return serializer.save()
+            # Superadmin har qanday foydalanuvchini yaratishi mumkin
+            serializer.save()
+
         elif user.role == "admin":
+     
             role = self.request.data.get("role")
-            if role in ["teacher","student"]:
-                return serializer.save()
+            if role in ["teacher", "student"]:
+                serializer.save(created_by=user)  
             else:
-                raise PermissionDenied("Admin faqat o'qituvchi va student yarata oladi")
+                raise PermissionDenied("Admin faqat o'qituvchi va student yarata oladi.")
+
         else:
-            raise PermissionDenied("Sizda foydalanuvchi yaratish huquqi yo'q")
+            raise PermissionDenied("Sizda foydalanuvchi yaratish huquqi yo‘q.")
         
 class CustomTokenObtainSerializer(TokenObtainPairSerializer):
     def validate(self,attrs):

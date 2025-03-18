@@ -1,9 +1,11 @@
+
 from django.db import models
 from app_users.models import User
 
 class Groups(models.Model):
     
     name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
     teacher = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
@@ -16,7 +18,7 @@ class Groups(models.Model):
         related_name="enrolled_groups", 
         blank=True
     )
-
+    
     def __str__(self):
         return self.name
     

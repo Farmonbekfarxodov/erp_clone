@@ -13,7 +13,15 @@ class Course(models.Model):
         blank=True, 
         related_name="created_courses"  
     )
+    teacher = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,blank=True,
+        related_name="teaching_courses"
+    )
+
     groups = models.ManyToManyField(Groups, related_name="courses", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
