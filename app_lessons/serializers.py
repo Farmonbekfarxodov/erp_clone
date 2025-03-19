@@ -4,7 +4,7 @@ from django.utils.timezone import now
 from datetime import datetime
 
 
-from .models import HomeworkGrade, HomeworkSubmission, Lesson, Homework
+from .models import  HomeworkSubmission, Lesson, Homework
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,7 +15,7 @@ class LessonSerializer(serializers.ModelSerializer):
 class HomeworkCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Homework
-        fields = ["text","deadline","lesson"]
+        fields = ["description","deadline","lesson"]
     
     def validate(self,data):
         request = self.context["request"]
@@ -59,27 +59,22 @@ class HomeworkSerializer(serializers.ModelSerializer):
             except ValueError:
                 raise serializers.ValidationError("vaqtni kiriting")
             
+
 class HomeworkSubmissionSerializer(serializers.ModelSerializer):
-    student = serializers.PrimaryKeyRelatedField(read_only=True)
+    """Talaba yuklagan uyga vazifa serializeri"""
+    
 
     class Meta:
         model = HomeworkSubmission
-        fields = ["id","homework","student","file","text","comment","submitted_at"]
-        read_only_fields = ["id","student","submitted_at"]
+        fields = ["id", "homework", "student", "file", "text", "comment", "submitted_at", "grade"]
+        read_only_fields = ["student", "submitted_at"]
 
-class HomeworkGradeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HomeworkGrade
-        fields = "__all__"
-        read_only_fields = ["teacher","created_at"]
 
-    def validate_homework(self,value):
-        user = self.context["request"].user
-        if user.role != "teacher":
-            raise serializers.ValidationError("Faqat o'qituvchilar baho qo'ya oladi")
-        if value.lesson.teacher != user:
-            raise value
+
+
+class HomeworkGradingSerializer(serializers.ModelSerializer):
+    """O'qituvchi uy vazifalarini baholashi uchun serializer"""
     
-    def create(self,validated_data):
-        validated_data["teacher"] = self.context["request"].user
-        return super().create(validated_data)
+    class Meta:
+        model = HomeworkSubmission
+        fields = ["grade"]  

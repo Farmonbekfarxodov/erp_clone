@@ -1,9 +1,9 @@
 
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
-from .models import Lesson, Homework, HomeworkGrade,HomeworkSubmission
+from .models import Lesson, Homework,HomeworkSubmission
 from .serializers import (LessonSerializer, HomeworkSerializer, 
-                          HomeworkGradeSerializer,HomeworkCreateSerializer,
+                          HomeworkCreateSerializer,HomeworkGradingSerializer,
                           HomeworkSubmissionSerializer)
 
 class LessonListCreateAPIView(generics.ListCreateAPIView):
@@ -46,26 +46,45 @@ class HomeworkCreateAPIView(generics.CreateAPIView):
         
         serializer.save(student=user)
 
-class HomeworkListCreateAPIView(generics.ListCreateAPIView):
-    """O'quvchi uyga vazifa yuklashi"""
+
+class HomeworkSubmissionListCreateAPIView(generics.ListCreateAPIView):
+    """Talabalar uy vazifalarini yuklashi"""
     queryset = HomeworkSubmission.objects.all()
     serializer_class = HomeworkSubmissionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         user = self.request.user
-        homework = serializer.validated_data["homework"] 
-        lesson = homework.lesson 
-     
+        homework = serializer.validated_data["homework"]
+        lesson = homework.lesson
+
         if user.role != "student":
             raise PermissionDenied("Faqat talabalar vazifa yuklashi mumkin")
 
-        
-        if lesson.group not in user.groups.all():  
+        if lesson.group not in user.groups.all():
             raise PermissionDenied("Siz bu dars uchun vazifa yuklay olmaysiz")
 
         serializer.save(student=user)
 
+class HomeworkGradingAPIView(generics.UpdateAPIView):
+    """O'qituvchi uy vazifalarini baholaydi"""
+    queryset = HomeworkSubmission.objects.all()
+    serializer_class = HomeworkGradingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        homework_submission = self.get_object()
+
+      
+        if user.role != "teacher":
+            raise PermissionDenied("Faqat o‘qituvchilar baho qo‘yishi mumkin")
+
+       
+        if homework_submission.homework.lesson.teacher != user:
+            raise PermissionDenied("Siz faqat o‘z darslaringizni baholashingiz mumkin")
+
+        serializer.save()
 
 class HomeworkDetailAPIView(generics.RetrieveDestroyAPIView):
     queryset = Homework.objects.all()
@@ -87,17 +106,3 @@ class HomeworkDetailAPIView(generics.RetrieveDestroyAPIView):
             raise PermissionDenied("Vazifa topshirish muddati tugagan o'chirish mumkin emas")
         instance.delete()
 
-class HomeworkGradeCreateAPIView(generics.CreateAPIView):
-    
-    queryset = HomeworkGrade.objects.all()
-    serializer_class = HomeworkGradeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        
-        homework = serializer.validated_data.get("homework")
-        if self.request.user.role != "teacher" or self.request.user != homework.lesson.teacher:
-            raise PermissionDenied("Faqat o‘z darslaringizdagi vazifalarni baholashingiz mumkin")
-        if homework.is_editable():
-            raise PermissionDenied("Vazifa topshirish muddati hali tugamagan!!!")
-        serializer.save(teacher=self.request.user)
